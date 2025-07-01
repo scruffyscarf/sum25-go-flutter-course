@@ -62,6 +62,16 @@ func (b *Broker) SendMessage(msg Message) error {
 	select {
 	case <-b.ctx.Done():
 		return errors.New("broker context canceled")
+	case <-b.done:
+		return errors.New("broker is stopped")
+	default:
+	}
+
+	select {
+	case <-b.ctx.Done():
+		return errors.New("broker context canceled")
+	case <-b.done:
+		return errors.New("broker is stopped")
 	case b.input <- msg:
 		return nil
 	}

@@ -6,7 +6,6 @@ import (
 	"sync"
 )
 
-// Message represents a chat message
 type Message struct {
 	Sender    string
 	Recipient string
@@ -37,6 +36,11 @@ func (b *Broker) Run() {
 		select {
 		case <-b.ctx.Done():
 			close(b.done)
+			b.usersMutex.Lock()
+			for _, ch := range b.users {
+				close(ch)
+			}
+			b.usersMutex.Unlock()
 			return
 		case msg := <-b.input:
 			b.usersMutex.RLock()
@@ -58,15 +62,32 @@ func (b *Broker) SendMessage(msg Message) error {
 	select {
 	case <-b.ctx.Done():
 		return errors.New("broker context canceled")
+	case <-b.done:
+		return errors.New("broker is stopped")
+	default:
+	}
+
+	select {
+	case <-b.ctx.Done():
+		return errors.New("broker context canceled")
+	case <-b.done:
+		return errors.New("broker is stopped")
 	case b.input <- msg:
 		return nil
 	}
 }
 
-func (b *Broker) RegisterUser(userID string, recv chan Message) {
+func (b *Broker) RegisterUser(userID string, recv chan Message) error {
+	select {
+	case <-b.ctx.Done():
+		return errors.New("broker context canceled")
+	default:
+	}
+
 	b.usersMutex.Lock()
 	defer b.usersMutex.Unlock()
 	b.users[userID] = recv
+	return nil
 }
 
 func (b *Broker) UnregisterUser(userID string) {

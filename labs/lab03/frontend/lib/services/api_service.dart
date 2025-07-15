@@ -1,7 +1,4 @@
-import 'dart:async';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:lab03_frontend/models/message.dart';
+import '../models/message.dart';
 
 class ApiService {
   static const String baseUrl = 'http://localhost:8080';
